@@ -1,0 +1,140 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  OPERATORE
+}
+
+enum Categoria {
+  CARPENTERIA
+  PLEX
+  LEGNO
+  ELETTRONICA
+  CABLAGGI
+  ALTRO
+}
+
+enum StatoOrdine {
+  APERTO
+  PARZIALE
+  COMPLETATO
+  ANNULLATO
+}
+
+model User {
+  id        String     @id @default(cuid())
+  email     String     @unique
+  password  String
+  nome      String
+  role      Role       @default(OPERATORE)
+  createdAt DateTime   @default(now())
+  receipts  Receipt[]
+  assemblies Assembly[]
+}
+
+model Supplier {
+  id       String    @id @default(cuid())
+  nome     String    @unique
+  paese    String    @default("Italia")
+  note     String?
+  articles Article[]
+  orders   Order[]
+}
+
+model Article {
+  id           String        @id @default(cuid())
+  codice       String        @unique
+  descrizione  String
+  categoria    Categoria     @default(CARPENTERIA)
+  unita        String        @default("pz")
+  fotoUrl      String?
+  giacenza     Int           @default(0)
+  scortaMinima Int           @default(0)
+  supplierId   String?
+  supplier     Supplier?     @relation(fields: [supplierId], references: [id])
+  createdAt    DateTime      @default(now())
+  orderLines   OrderLine[]
+  receiptLines ReceiptLine[]
+  bomItems     BomItem[]
+}
+
+model Order {
+  id         String      @id @default(cuid())
+  numero     String      @unique
+  supplierId String
+  supplier   Supplier    @relation(fields: [supplierId], references: [id])
+  stato      StatoOrdine @default(APERTO)
+  note       String?
+  createdAt  DateTime    @default(now())
+  lines      OrderLine[]
+  receipts   Receipt[]
+}
+
+model OrderLine {
+  id          String  @id @default(cuid())
+  orderId     String
+  order       Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  articleId   String
+  article     Article @relation(fields: [articleId], references: [id])
+  qtaOrdinata Int
+  qtaRicevuta Int     @default(0)
+}
+
+model Receipt {
+  id        String        @id @default(cuid())
+  orderId   String?
+  order     Order?        @relation(fields: [orderId], references: [id])
+  userId    String?
+  user      User?         @relation(fields: [userId], references: [id])
+  note      String?
+  createdAt DateTime      @default(now())
+  lines     ReceiptLine[]
+}
+
+model ReceiptLine {
+  id        String  @id @default(cuid())
+  receiptId String
+  receipt   Receipt @relation(fields: [receiptId], references: [id], onDelete: Cascade)
+  articleId String
+  article   Article @relation(fields: [articleId], references: [id])
+  qta       Int
+}
+
+model ProductModel {
+  id          String     @id @default(cuid())
+  nome        String     @unique
+  descrizione String?
+  fotoUrl     String?
+  createdAt   DateTime   @default(now())
+  items       BomItem[]
+  assemblies  Assembly[]
+}
+
+model BomItem {
+  id             String       @id @default(cuid())
+  productModelId String
+  productModel   ProductModel @relation(fields: [productModelId], references: [id], onDelete: Cascade)
+  articleId      String
+  article        Article      @relation(fields: [articleId], references: [id])
+  qta            Int
+
+  @@unique([productModelId, articleId])
+}
+
+model Assembly {
+  id             String       @id @default(cuid())
+  productModelId String
+  productModel   ProductModel @relation(fields: [productModelId], references: [id])
+  qta            Int
+  userId         String?
+  user           User?        @relation(fields: [userId], references: [id])
+  note           String?
+  createdAt      DateTime     @default(now())
+}
