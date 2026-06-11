@@ -11,6 +11,7 @@ Web app per la gestione del magazzino: articoli, fornitori, ordini con ricevimen
 
 ```bash
 npm install
+copy .env.example .env   # Windows (su Mac/Linux: cp .env.example .env)
 npx prisma db push   # crea il database
 npm run db:seed      # crea l'utente admin
 npm run dev          # avvia su http://localhost:3000
